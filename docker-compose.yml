@@ -1,0 +1,62 @@
+services:
+  # THE SITE COMPOSE
+  web:
+    build: .
+    command: gunicorn OS.wsgi:application --bind 0.0.0.0:8001 --workers 3
+    volumes:
+      - .:/app
+    expose:
+      - "8001"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - redis
+    deploy:
+      replicas: 3
+    restart: unless-stopped
+
+  # nginx compose
+  nginx:
+    image: nginx:stable-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  # REDIS COMPOSE
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6300:6379"
+
+  # celery worker compose
+  celery_worker:
+    build: .
+    container_name: askwise_api_celery
+    command: celery -A OS.celery:app worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # celery beat compose
+  celery_beat:
+    build: .
+    container_name: askwise_api_celery_beat
+    command: celery -A OS.celery:app beat --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
