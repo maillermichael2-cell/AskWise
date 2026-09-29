@@ -1,6 +1,7 @@
 import os
 from django.db import models
 from django.core.exceptions import ValidationError
+from pgvector.django import VectorField, HnswIndex
 
 def validate_file_type(value):
     ext = os.path.splitext(value.name)[1].lower()
@@ -37,3 +38,24 @@ class KnowledgeDocument(models.Model):
         if not self.file_name and self.file:
             self.file_name = os.path.basename(self.file.name)
         super().save(*args, **kwargs)
+
+
+
+class DocumentChunk(models.Model):
+    document = models.ForeignKey(KnowledgeDocument, on_delete=models.CASCADE, related_name="chunks")
+    chunk_index = models.IntegerField()
+    text = models.TextField()
+    embedding = VectorField(dimensions=384)  # all-MiniLM-L6-v2 output size
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["chunk_index"]
+        indexes = [
+            HnswIndex(
+                name="chunk_embedding_hnsw_idx",
+                fields=["embedding"],
+                m=16,
+                ef_construction=64,
+                opclasses=["vector_cosine_ops"],
+            )
+        ]

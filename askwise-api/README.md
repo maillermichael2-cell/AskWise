@@ -60,8 +60,8 @@ Instead of searching the internet, AskWise searches the business's own verified 
 Businesses can:
 
 - Create an organization
-- Manage organization details
-- Invite staff members (Future)
+- Upload documents
+- ai reviews document
 - Manage AI settings
 - Configure assistant personality
 - Manage API Keys (Future)
